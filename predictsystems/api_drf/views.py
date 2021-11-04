@@ -6,7 +6,6 @@ from .models import Post
 from rest_framework import status
 from rest_framework.authentication import BasicAuthentication
 from rest_framework.permissions import IsAuthenticated
-from django.contrib.auth import authenticate
 
 class UserRegisterApiView(APIView):
 
@@ -44,7 +43,7 @@ class UserRegisterApiView(APIView):
         responses:
             - response_code: 500
               Description: Server error
-            - response_code: 200
+            - response_code: 201
               Description: Data stored in database
         """
         try:
@@ -72,14 +71,14 @@ class PostsApiView(APIView):
         """
         Get all posts
         ---
-            Auth: Public
+            Auth: Authenticated user
         parameters:
             - none
         responses:
             - response_code: 500
               Description: Server error
             - response_code: 200
-              Description: Data stored in database
+              Description: Ok
         """
         try:
             response = PostSerializer(Post.objects.filter(active=True).order_by('-created_date'), many=True)
@@ -91,7 +90,7 @@ class PostsApiView(APIView):
         """
         Create new post
         ---
-            Auth: Public
+            Auth: Authenticated user
         parameters:
             - in: body
                 name: name
@@ -101,7 +100,7 @@ class PostsApiView(APIView):
         responses:
             - response_code: 500
               Description: Server error
-            - response_code: 200
+            - response_code: 201
               Description: Data stored in database
         """
         try:
@@ -126,14 +125,16 @@ class PostApiView(APIView):
         """
         Get a post form user
         ---
-            Auth: Public
+            Auth: Authenticated user
         parameters:
             - none
         responses:
             - response_code: 500
               Description: Server error
+            - response_code: 400
+              Description: Error
             - response_code: 200
-              Description: Data stored in database
+              Description: Ok
         """
         try:
             response = PostSerializer(Post.objects.get(creator_id=request.user.id, active=True, id=id))
@@ -145,7 +146,7 @@ class PostApiView(APIView):
         """
         Update an existing post
         ---
-            Auth: Public
+            Auth: Authenticated user
         parameters:
             - in: body
                 name: name
@@ -155,8 +156,10 @@ class PostApiView(APIView):
         responses:
             - response_code: 500
               Description: Server error
+            - response_code: 400
+              Description: Error
             - response_code: 200
-              Description: Data stored in database
+              Description: Ok
         """
         try:
             serializer_input = PostCreateSerializer(data=request.data)
@@ -165,7 +168,7 @@ class PostApiView(APIView):
                 post.name = serializer_input.data['name']
                 post.save()
                 response = PostSerializer(post)
-                return Response(response.data, status=status.HTTP_201_CREATED)
+                return Response(response.data, status=status.HTTP_200_OK)
             return Response(serializer_input.errors, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
@@ -174,25 +177,23 @@ class PostApiView(APIView):
         """
         Delete an existing post
         ---
-            Auth: Public
+            Auth: Authenticated user
         parameters:
-            - in: body
-                name: name
-                description: Post name
-                required: true
-                type: str
+            - none
         responses:
             - response_code: 500
               Description: Server error
+            - response_code: 400
+              Description: Error
             - response_code: 200
-              Description: Data stored in database
+              Description: Ok
         """
         try:
             post = Post.objects.get(id=id, creator_id=request.user.id, active=True)
             post.active = False
             post.save()
             response = PostSerializer(post)
-            return Response(response.data, status=status.HTTP_201_CREATED)
+            return Response(response.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
 
@@ -202,10 +203,24 @@ class LikePostApiView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def put(self, request, id):
+        """
+        Like an existing post
+        ---
+            Auth: Authenticated user
+        parameters:
+            - none
+        responses:
+            - response_code: 500
+              Description: Server error
+            - response_code: 400
+              Description: Error
+            - response_code: 200
+              Description: Ok
+        """
         try:
             post = Post.objects.get(id=id, active=True)
             post.likes.add(request.user.id)
             response = PostSerializer(post)
-            return Response(response.data, status=status.HTTP_201_CREATED)
+            return Response(response.data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e), status=status.HTTP_400_BAD_REQUEST)
