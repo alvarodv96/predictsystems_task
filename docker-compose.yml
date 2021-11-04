@@ -1,0 +1,24 @@
+version: '3'
+
+services: 
+
+  predictsystemsbackend:
+    build: .
+    container_name: predictsystems_backend
+    volumes:
+      - ./predictsystems:/code
+    ports:
+      - "8002:8000"
+    depends_on:
+      - predictsystemsdb
+
+  predictsystemsdb:
+    image: mysql:5.7
+    container_name: predictsystems_database
+    environment:
+       MYSQL_DATABASE: ${MYSQL_DATABASE}
+       MYSQL_USER: ${MYSQL_USER}
+       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "33308:3306"
